@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>AD User Portal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #161616;
+    --surface2: #1e1e1e;
+    --border: #2a2a2a;
+    --border-bright: #3a3a3a;
+    --text: #e8e8e8;
+    --text-muted: #888;
+    --text-dim: #555;
+    --green: #00d084;
+    --green-dim: rgba(0,208,132,0.08);
+    --green-border: rgba(0,208,132,0.25);
+    --red: #ff4d4d;
+    --red-dim: rgba(255,77,77,0.08);
+    --red-border: rgba(255,77,77,0.25);
+    --amber: #f5a623;
+    --amber-dim: rgba(245,166,35,0.08);
+    --blue: #4da6ff;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+    --radius: 4px;
+    --radius-lg: 8px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* ── Layout ── */
+  .layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .sidebar-logo {
+    padding: 0 20px 24px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+  }
+  .sidebar-logo .logo-mark {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .sidebar-logo .logo-name {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .sidebar-logo .logo-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+  .nav-section {
+    padding: 0 12px;
+    margin-bottom: 8px;
+  }
+  .nav-label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0 8px;
+    margin-bottom: 4px;
+  }
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius);
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 13px;
+    transition: all 0.15s;
+    border: 1px solid transparent;
+    background: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--sans);
+  }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active {
+    color: var(--green);
+    background: var(--green-dim);
+    border-color: var(--green-border);
+  }
+  .nav-item.active-red {
+    color: var(--red);
+    background: var(--red-dim);
+    border-color: var(--red-border);
+  }
+  .nav-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .sidebar-footer {
+    margin-top: auto;
+    padding: 16px 20px 0;
+    border-top: 1px solid var(--border);
+  }
+  .status-pill {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .status-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  /* ── Main ── */
+  .main { background: var(--bg); overflow-y: auto; }
+  .topbar {
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .topbar-title { font-size: 16px; font-weight: 500; }
+  .topbar-sub { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
+  .topbar-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .content { padding: 28px 32px; }
+
+  /* ── Panels ── */
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+  .card-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* ── Form elements ── */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+  .col-span-2 { grid-column: 1 / -1; }
+
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .field input,
+  .field select,
+  .field textarea {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 13px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .field input:focus,
+  .field select:focus,
+  .field textarea:focus {
+    border-color: var(--border-bright);
+  }
+  .field select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    padding-right: 28px;
+    cursor: pointer;
+  }
+  .field select[multiple] {
+    background-image: none;
+    padding-right: 10px;
+    height: 100px;
+  }
+  .field input::placeholder { color: var(--text-dim); }
+
+  /* username preview */
+  .username-preview {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--green);
+    padding: 6px 10px;
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    border-radius: var(--radius);
+    margin-top: 4px;
+    min-height: 30px;
+    display: flex;
+    align-items: center;
+  }
+  .username-preview.empty { color: var(--text-dim); font-style: italic; }
+
+  /* ── Submit buttons ── */
+  .btn {
+    width: 100%;
+    padding: 11px 20px;
+    border-radius: var(--radius);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border: 1px solid;
+    transition: all 0.15s;
+    margin-top: 8px;
+  }
+  .btn-green {
+    background: var(--green-dim);
+    border-color: var(--green-border);
+    color: var(--green);
+  }
+  .btn-green:hover { background: rgba(0,208,132,0.14); border-color: var(--green); }
+  .btn-red {
+    background: var(--red-dim);
+    border-color: var(--red-border);
+    color: var(--red);
+  }
+  .btn-red:hover { background: rgba(255,77,77,0.14); border-color: var(--red); }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* ── Checklist ── */
+  .checklist { display: flex; flex-direction: column; gap: 8px; }
+  .check-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .check-icon {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    font-size: 10px;
+  }
+  .check-icon.ok { background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border); }
+  .check-icon.warn { background: var(--amber-dim); color: var(--amber); border: 1px solid rgba(245,166,35,0.25); }
+
+  /* ── Result box ── */
+  .result-box {
+    display: none;
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    margin-top: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+  }
+  .result-box.success {
+    display: block;
+    background: var(--green-dim);
+    border: 1px solid var(--green-border);
+    color: var(--green);
+  }
+  .result-box.error {
+    display: block;
+    background: var(--red-dim);
+    border: 1px solid var(--red-border);
+    color: var(--red);
+  }
+  .result-box.loading {
+    display: block;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+  }
+
+  /* ── Log table ── */
+  .log-table { width: 100%; border-collapse: collapse; }
+  .log-table th {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 400;
+  }
+  .log-table td {
+    padding: 10px 12px;
+    font-size: 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-muted);
+    vertical-align: top;
+  }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-table tr:hover td { background: var(--surface2); }
+  .log-table td.type { font-family: var(--mono); font-weight: 500; }
+  .log-table td.type.on { color: var(--green); }
+  .log-table td.type.off { color: var(--red); }
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    border: 1px solid;
+  }
+  .badge.ok { color: var(--green); border-color: var(--green-border); background: var(--green-dim); }
+  .badge.fail { color: var(--red); border-color: var(--red-border); background: var(--red-dim); }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid var(--border-bright);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  /* ── Misc ── */
+  .hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  .section-gap { margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-mark">// sys-admin</div>
+      <div class="logo-name">AD Portal</div>
+      <div class="logo-sub">User Lifecycle Management</div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-label">Actions</div>
+      <button class="nav-item active" id="nav-onboard" onclick="switchPanel('onboard')">
+        <span class="nav-dot"></span> Onboard user
+      </button>
+      <button class="nav-item" id="nav-offboard" onclick="switchPanel('offboard')">
+        <span class="nav-dot"></span> Offboard user
+      </button>
+    </div>
+
+    <div class="nav-section" style="margin-top:8px;">
+      <div class="nav-label">History</div>
+      <button class="nav-item" id="nav-log" onclick="switchPanel('log')">
+        <span class="nav-dot"></span> Task log
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        <span>API at localhost:5000</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="panel-title">Onboard user</div>
+        <div class="topbar-sub" id="panel-sub">Create a new AD account and assign groups</div>
+      </div>
+      <div class="topbar-meta" id="clock"></div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ ONBOARD PANEL ══ -->
+      <div id="panel-onboard" class="panel active">
+
+        <div class="card">
+          <div class="card-title">Personal information</div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>First name *</label>
+              <input type="text" id="ob-fname" placeholder="Jane" oninput="updateUsername()" />
+            </div>
+            <div class="field">
+              <label>Last name *</label>
+              <input type="text" id="ob-lname" placeholder="Smith" oninput="updateUsername()" />
+            </div>
+          </div>
+          <div class="field section-gap">
+            <label>Generated username</label>
+            <div class="username-preview empty" id="username-preview">— enter first and last name above —</div>
+          </div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>Job title *</label>
+              <select id="ob-title">
+                <option value="">— select title —</option>
+                <option>Help Desk Technician</option>
+                <option>IT Support Analyst</option>
+                <option>Systems Administrator</option>
+                <option>Network Engineer</option>
+                <option>Security Analyst</option>
+                <option>Software Developer</option>
+                <option>DevOps Engineer</option>
+                <option>Project Manager</option>
+                <option>Business Analyst</option>
+                <option>HR Coordinator</option>
+                <option>Finance Analyst</option>
+                <option>Marketing Coordinator</option>
+                <option>Sales Representative</option>
+                <option>Intern</option>
+                <option>Contractor</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Department *</label>
+              <select id="ob-dept">
+                <option value="">— select department —</option>
+                <option>IT</option>
+                <option>Human Resources</option>
+                <option>Finance</option>
+                <option>Marketing</option>
+                <option>Operations</option>
+                <option>Sales</option>
+                <option>Legal</option>
+                <option>Executive</option>
+              </select>
+            </div>
+          </div>
+          <div class="field section-gap">
+            <label>Email address</label>
+            <input type="email" id="ob-email" placeholder="Auto-filled — or override" />
+            <div class="hint">Leave blank to auto-generate from username</div>
+          </div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>Office / Site</label>
+              <select id="ob-office">
+                <option>Head Office</option>
+                <option>Branch — Sydney</option>
+                <option>Branch — Melbourne</option>
+                <option>Branch — Brisbane</option>
+                <option>Remote</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Reports to (manager)</label>
+              <select id="ob-manager">
+                <option value="">— select manager —</option>
+                <option value="jdavies">John Davies (IT Manager)</option>
+                <option value="swong">Sarah Wong (HR Lead)</option>
+                <option value="mchen">Mike Chen (Finance Director)</option>
+                <option value="abrown">Alice Brown (Operations)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Start date *</label>
+              <input type="date" id="ob-start" />
+            </div>
+            <div class="field">
+              <label>Account expiry (optional)</label>
+              <input type="date" id="ob-expiry" />
+              <div class="hint">For contractors or fixed-term roles</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Group memberships</div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Security groups (Ctrl+click to select multiple)</label>
+              <select id="ob-groups" multiple>
+                <option value="IT-Staff">IT-Staff</option>
+                <option value="VPN-Users">VPN-Users</option>
+                <option value="Finance-ReadOnly">Finance-ReadOnly</option>
+                <option value="HR-Staff">HR-Staff</option>
+                <option value="Remote-Desktop-Users">Remote-Desktop-Users</option>
+                <option value="Printer-Access">Printer-Access</option>
+                <option value="SharePoint-Users">SharePoint-Users</option>
+                <option value="Domain-Admins">Domain-Admins</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Distribution lists (Ctrl+click to select multiple)</label>
+              <select id="ob-dls" multiple>
+                <option value="helpdesk@company.local">helpdesk@company.local</option>
+                <option value="finance-team@company.local">finance-team@company.local</option>
+                <option value="all-staff@company.local">all-staff@company.local</option>
+                <option value="it-alerts@company.local">it-alerts@company.local</option>
+                <option value="management@company.local">management@company.local</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">What will run automatically</div>
+          <div class="checklist">
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Create AD account — placed in correct OU by department
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Set temp password (Welcome@2024!) — force change on first login
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Add to selected security groups and distribution lists
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Set account expiry date (if provided)
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Log action to task log with timestamp
+            </div>
+            <div class="check-row">
+              <div class="check-icon warn">!</div>
+              Welcome email to manager — requires SMTP config in Flask
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-green" id="btn-onboard" onclick="submitOnboard()">
+          → Run onboarding script
+        </button>
+        <div class="result-box" id="onboard-result"></div>
+      </div>
+
+      <!-- ══ OFFBOARD PANEL ══ -->
+      <div id="panel-offboard" class="panel">
+
+        <div class="card">
+          <div class="card-title">User to offboard</div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>AD Username (sAMAccountName) *</label>
+              <input type="text" id="off-username" placeholder="jsmith" />
+              <div class="hint">This is the short login name, e.g. jsmith</div>
+            </div>
+            <div class="field">
+              <label>Full name (for log)</label>
+              <input type="text" id="off-fullname" placeholder="Jane Smith" />
+            </div>
+          </div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>Last working day *</label>
+              <input type="date" id="off-lastday" />
+            </div>
+            <div class="field">
+              <label>Ticket / reference number *</label>
+              <input type="text" id="off-ticket" placeholder="INC-00123" />
+            </div>
+          </div>
+          <div class="form-grid section-gap">
+            <div class="field">
+              <label>Reason for offboarding *</label>
+              <select id="off-reason">
+                <option value="">— select reason —</option>
+                <option>Resignation</option>
+                <option>Termination</option>
+                <option>Contract ended</option>
+                <option>Transfer to another entity</option>
+                <option>Retirement</option>
+                <option>Redundancy</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Data handover to</label>
+              <select id="off-handover">
+                <option value="">— select person —</option>
+                <option value="jdavies">John Davies (IT Manager)</option>
+                <option value="swong">Sarah Wong (HR Lead)</option>
+                <option value="mchen">Mike Chen (Finance Director)</option>
+                <option value="abrown">Alice Brown (Operations)</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Additional notes</label>
+            <textarea id="off-notes" rows="2" placeholder="e.g. Return laptop by end of day, revoke building pass" style="resize:vertical;"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Offboarding actions that will run</div>
+          <div class="checklist">
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Disable AD account immediately
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Reset password to random 20-char string (locks all active sessions)
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Remove from all security groups (except Domain Users)
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Move account to Disabled Users OU
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Set account description: date + reason + ticket ref
+            </div>
+            <div class="check-row">
+              <div class="check-icon ok">✓</div>
+              Log action to task log with timestamp
+            </div>
+            <div class="check-row">
+              <div class="check-icon warn">!</div>
+              Mailbox delegation to manager — requires Exchange / M365
+            </div>
+            <div class="check-row">
+              <div class="check-icon warn">!</div>
+              MFA token revocation — requires Azure AD / Entra config
+            </div>
+          </div>
+        </div>
+
+        <button class="btn btn-red" id="btn-offboard" onclick="submitOffboard()">
+          → Run offboarding script
+        </button>
+        <div class="result-box" id="offboard-result"></div>
+      </div>
+
+      <!-- ══ LOG PANEL ══ -->
+      <div id="panel-log" class="panel">
+        <div class="card">
+          <div class="card-title">Task log — this session</div>
+          <div id="log-empty" style="color:var(--text-dim);font-size:12px;font-family:var(--mono);">
+            No actions run yet this session.
+          </div>
+          <table class="log-table" id="log-table" style="display:none;">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Type</th>
+                <th>User</th>
+                <th>Details</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="log-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </main>
+</div><!-- /layout -->
+
+<script>
+// ── Config ──────────────────────────────────────────────
+const API_BASE = 'http://localhost:5000'; // Change to your Flask server IP if needed
+
+// ── Clock ───────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleDateString('en-AU') + ' ' + now.toLocaleTimeString('en-AU', {hour:'2-digit',minute:'2-digit'});
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+// ── Nav ─────────────────────────────────────────────────
+const panelMeta = {
+  onboard:  { title: 'Onboard user',  sub: 'Create a new AD account and assign groups' },
+  offboard: { title: 'Offboard user', sub: 'Disable and clean up a departing user\'s account' },
+  log:      { title: 'Task log',      sub: 'Actions run during this session' },
+};
+
+function switchPanel(name) {
+  ['onboard','offboard','log'].forEach(p => {
+    document.getElementById('panel-' + p).classList.toggle('active', p === name);
+    const nav = document.getElementById('nav-' + p);
+    if (!nav) return;
+    nav.className = 'nav-item';
+    if (p === name) nav.classList.add(p === 'offboard' ? 'active-red' : 'active');
+  });
+  document.getElementById('panel-title').textContent = panelMeta[name].title;
+  document.getElementById('panel-sub').textContent   = panelMeta[name].sub;
+}
+
+// ── Username preview ─────────────────────────────────────
+function updateUsername() {
+  const f = document.getElementById('ob-fname').value.trim();
+  const l = document.getElementById('ob-lname').value.trim();
+  const preview = document.getElementById('username-preview');
+  if (!f && !l) {
+    preview.textContent = '— enter first and last name above —';
+    preview.classList.add('empty');
+    return;
+  }
+  const uname = ((f ? f[0] : '') + l).toLowerCase().replace(/[^a-z0-9]/g, '');
+  preview.textContent = uname + '@company.local';
+  preview.classList.remove('empty');
+
+  // Auto-fill email if blank
+  const emailInput = document.getElementById('ob-email');
+  if (!emailInput.dataset.userEdited) {
+    emailInput.placeholder = uname + '@company.local';
+  }
+}
+
+document.getElementById('ob-email').addEventListener('input', function() {
+  this.dataset.userEdited = this.value ? '1' : '';
+});
+
+// ── Selected options helper ──────────────────────────────
+function getSelected(id) {
+  return Array.from(document.getElementById(id).selectedOptions).map(o => o.value);
+}
+
+// ── Log helper ───────────────────────────────────────────
+const sessionLog = [];
+function addLog(type, user, details, ok) {
+  sessionLog.unshift({ time: new Date(), type, user, details, ok });
+  renderLog();
+}
+
+function renderLog() {
+  const tbody = document.getElementById('log-body');
+  const empty = document.getElementById('log-empty');
+  const table = document.getElementById('log-table');
+  if (!sessionLog.length) {
+    empty.style.display = 'block';
+    table.style.display = 'none';
+    return;
+  }
+  empty.style.display = 'none';
+  table.style.display = 'table';
+  tbody.innerHTML = sessionLog.map(r => `
+    <tr>
+      <td style="font-family:var(--mono);white-space:nowrap;">
+        ${r.time.toLocaleTimeString('en-AU',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}
+      </td>
+      <td class="type ${r.type === 'ONBOARD' ? 'on' : 'off'}">${r.type}</td>
+      <td style="font-family:var(--mono);">${r.user}</td>
+      <td>${r.details}</td>
+      <td><span class="badge ${r.ok ? 'ok' : 'fail'}">${r.ok ? 'success' : 'failed'}</span></td>
+    </tr>
+  `).join('');
+}
+
+// ── Show result ──────────────────────────────────────────
+function showResult(elId, type, message) {
+  const el = document.getElementById(elId);
+  el.className = 'result-box ' + type;
+  el.textContent = message;
+}
+
+// ── Onboard submit ────────────────────────────────────────
+async function submitOnboard() {
+  const fname  = document.getElementById('ob-fname').value.trim();
+  const lname  = document.getElementById('ob-lname').value.trim();
+  const title  = document.getElementById('ob-title').value;
+  const dept   = document.getElementById('ob-dept').value;
+  const start  = document.getElementById('ob-start').value;
+
+  if (!fname || !lname || !title || !dept || !start) {
+    showResult('onboard-result', 'error', '✗ Please fill in all required fields (name, title, department, start date).');
+    return;
+  }
+
+  const uname  = (fname[0] + lname).toLowerCase().replace(/[^a-z0-9]/g, '');
+  const email  = document.getElementById('ob-email').value.trim() || uname + '@company.local';
+  const groups = getSelected('ob-groups');
+  const dls    = getSelected('ob-dls');
+
+  const payload = {
+    firstName:  fname,
+    lastName:   lname,
+    username:   uname,
+    title:      title,
+    department: dept,
+    email:      email,
+    office:     document.getElementById('ob-office').value,
+    manager:    document.getElementById('ob-manager').value,
+    startDate:  start,
+    expiryDate: document.getElementById('ob-expiry').value,
+    groups:     groups,
+    distLists:  dls,
+  };
+
+  const btn = document.getElementById('btn-onboard');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running onboarding script…';
+  showResult('onboard-result', 'loading', 'Connecting to Flask API → PowerShell…');
+
+  try {
+    const res  = await fetch(API_BASE + '/onboard', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showResult('onboard-result', 'success',
+        '✓ Onboarding complete\n\n' + data.output);
+      addLog('ONBOARD', uname, `${fname} ${lname} → ${dept}, ${title}`, true);
+    } else {
+      showResult('onboard-result', 'error',
+        '✗ Script error\n\n' + (data.error || data.output));
+      addLog('ONBOARD', uname, `${fname} ${lname} — FAILED`, false);
+    }
+  } catch (err) {
+    showResult('onboard-result', 'error',
+      '✗ Could not reach Flask API at ' + API_BASE + '\n\n' +
+      'Make sure app.py is running on your AD server.\n\nError: ' + err.message);
+    addLog('ONBOARD', uname, `${fname} ${lname} — API unreachable`, false);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '→ Run onboarding script';
+}
+
+// ── Offboard submit ───────────────────────────────────────
+async function submitOffboard() {
+  const username = document.getElementById('off-username').value.trim();
+  const lastday  = document.getElementById('off-lastday').value;
+  const ticket   = document.getElementById('off-ticket').value.trim();
+  const reason   = document.getElementById('off-reason').value;
+
+  if (!username || !lastday || !ticket || !reason) {
+    showResult('offboard-result', 'error', '✗ Please fill in all required fields (username, last day, ticket ref, reason).');
+    return;
+  }
+
+  const fullname = document.getElementById('off-fullname').value.trim() || username;
+
+  const payload = {
+    username,
+    fullname,
+    lastDay:   lastday,
+    ticketRef: ticket,
+    reason,
+    handover:  document.getElementById('off-handover').value,
+    notes:     document.getElementById('off-notes').value.trim(),
+  };
+
+  const btn = document.getElementById('btn-offboard');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running offboarding script…';
+  showResult('offboard-result', 'loading', 'Connecting to Flask API → PowerShell…');
+
+  try {
+    const res  = await fetch(API_BASE + '/offboard', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload),
+    });
+    const data = await res.json();
+
+    if (data.success) {
+      showResult('offboard-result', 'success',
+        '✓ Offboarding complete\n\n' + data.output);
+      addLog('OFFBOARD', username, `${fullname} — ${reason} | ${ticket}`, true);
+    } else {
+      showResult('offboard-result', 'error',
+        '✗ Script error\n\n' + (data.error || data.output));
+      addLog('OFFBOARD', username, `${fullname} — FAILED`, false);
+    }
+  } catch (err) {
+    showResult('offboard-result', 'error',
+      '✗ Could not reach Flask API at ' + API_BASE + '\n\n' +
+      'Make sure app.py is running on your AD server.\n\nError: ' + err.message);
+    addLog('OFFBOARD', username, `${fullname} — API unreachable`, false);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '→ Run offboarding script';
+}
+</script>
+</body>
+</html>
